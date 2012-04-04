@@ -1,4 +1,85 @@
-The following are notes on building enchant and its dependencies using MSVC 2005.
+The following are notes on building enchant (1.6) and its dependencies using MSVC 2008 (by John Thomson).
+Sorry they are rather rough, but it's the best I can do and should be of some help.
+
+Enchant depends on glib. Based on Eric's comments I think it may be important to build glib using the same exact C runtime library,
+though I have not confirmed this.
+
+I started by downloading glib-2.26.1.tar.bz2 from http://www.gtk.org/download-windows.html and expand twice with stuffit (to d:\try2\glib).
+Open D:\try2\glib\glib-2.26.1\build\win32\vs9\glib.sln in Visual Studio.
+
+Be sure to follow the instructions in  glib-2.26.1\build\win32\vs9\README.txt, which describes how to set up the build and dependencies.
+
+Even after doing that, this solution, as of 2.26.1, has some problems. The Windows build process does not know how to make some .h files
+from .h.in ones. For example, glibconfig.h.win32.in needs to be copied to glibconfig.h.win32.
+
+There is a bug in the prebuild event, at least for glib and I think also for some other modules. Change the lines for glibconfig.h to
+
+if exist ..\..\..\glib\glibconfig.h goto DONE_GLIBCONFIG_H
+copy ..\..\..\glib\glibconfig.h.win32 ..\..\..\glib\glibconfig.h
+
+Now it at least tries to build the C++ files.
+
+Still 12 build errors.
+define G_OS_WIN32 as project pre-processor define fixes many.
+modify gtimer.c not to include sys/time.h if G_OS_WIN32 is defined fixes another (and many warnings).
+
+Now remaining problems are missing files in glib\pcre
+Files 
+'..\..\..\glib\pcre\pcre_version.c'
+'..\..\..\glib\pcre\pcre_valid_utf8.c'
+'..\..\..\glib\pcre\pcre_refcount.c
+ '..\..\..\glib\pcre\pcre_maketables.c'
+'..\..\..\glib\pcre\pcre_info.c'
+
+Simply removing them from the project leads to a successful build as far as I can tell.
+(I note that these files are not listed in the pcre Makefile.am; possibly they have been removed but the Windows build was not updated?)
+
+Outputs are now in D:\try2\glib\glib-2.26.1\build\win32\vs9\Release\Win32\bin.
+
+So much for glib. Now for building Enchant. Used TortoiseSvn to get source from http://svn.abisource.com/enchant/trunk to d:\Enchant.
+The VS project in the repository when I started was for VS2005 (I think I used revision 29482).
+I opened it and let it update to a VS 2008 project.
+
+Copied all the .h files from D:\try2\glib\glib-2.26.1\glib to D:\Enchant\lib\glib\include\glib-2.0.
+(It only obviously needs glib.h, but that includes all or most of the rest.)
+Then had to move all but glib.h itself into a glib subdirectory.
+glibconfig apparently needs to be back up in glib-2.0.
+
+Copy gmodule.h from D:\try2\glib\glib-2.26.1\gmodule to D:\Enchant\lib\glib\include\glib-2.0
+
+In project properties, defined ENCHANT_VERSION_STRING to be \"1.6\". (This is probably not the ideal way to handle this.)
+
+Resource file libenchant.rc cannot be found anywhere. Tried removing it.
+Now everything compiles (but doesn't link yet).
+However, libenchant.rc produces the "details" that a DLL should have in its properties in Windows explorer.
+Discovered it is supposed to be generateed from libenchant.rc.in. Generated one by hand making appropriate version number substitutions.
+This seems to work.
+
+Copy glib-2.0.lib (as glib-2.0-vs9.lib) and gmodule-2.0.lib (as gmodule-2.0-vs9.lib) from D:\try2\glib\glib-2.26.1\build\win32\vs9\Release\Win32\bin to D:\Enchant\lib\glib\release.
+Change Include files to use vs9 rather than vs8.
+
+At this point, we seem to have a good build of libenchant.dll.
+
+However the broker was still not able to make a dictionary based on the myspell stuff. Seems we need to build a compatible myspell backend.
+Did that with minor fixes to project #defines and manually added .rc to give version number.
+
+Getting unit tests working
+- Downloaded unittest-cpp-1.4.zip from http://sourceforge.net/projects/unittest-cpp/files/UnitTest%2B%2B/1.4/unittest-cpp-1.4.zip/download. Unzip to D:\Enchant\lib.
+- Change lib file in two projects from vs8 to vs9
+- in EnchantBrokerTestFixture.h, add
+#define testResults_ (*(UnitTest::CurrentTest::Results())) ...that doesn't seem right, most of the tests using that fail. But it got it to compile and let me run the others.
+Got the required  UnitTest++.vsnet2005.lib... by building the unitTest++ solution.
+
+At this point I could run some unit tests. I didn't get them working all the way.
+
+Gotcha: if you run the enchant user tests (which I only partly got working), they set an enchant data directory in the registry, which breaks the FW unit test the second and later times it is run, because it can't delete the temp dictionary.
+
+Sorry this is so incomplete but it's as far as I got.
+
+----------------------------------
+
+The following are notes on building enchant (1.3?) and its dependencies using MSVC 2005 (by a former author, I think Eric Albright).
+Some of the comments here may still be relevant for 1.6; I'm keeping the information because I don't understand it entirely.
 
 Enchant depends on glib (http://www.gtk.org/)
 Glib depends on libiconv (http://www.gnu.org/software/libiconv/) 

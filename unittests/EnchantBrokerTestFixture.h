@@ -41,6 +41,7 @@
 #endif
 #endif
 
+#define testResults_ (*(UnitTest::CurrentTest::Results()))
 //////////////////////////////////////
 // Mock provider functions
 static void

@@ -626,23 +626,24 @@ int enchant_pwl_check(EnchantPWL *pwl, const char *const word, size_t len)
 	if(exists)
 		return 0;
 
-	if(enchant_is_title_case(word, len) || (isAllCaps = enchant_is_all_caps(word, len)))
-		{
-			char * lower_case_word = g_utf8_strdown(word, len);
-			exists = enchant_pwl_contains(pwl, lower_case_word, strlen(lower_case_word));
-			g_free(lower_case_word);
-			if(exists)
-				return 0;
+	// Don't want title-case and all-caps smarts in FieldWorks.
+	//if(enchant_is_title_case(word, len) || (isAllCaps = enchant_is_all_caps(word, len)))
+	//	{
+	//		char * lower_case_word = g_utf8_strdown(word, len);
+	//		exists = enchant_pwl_contains(pwl, lower_case_word, strlen(lower_case_word));
+	//		g_free(lower_case_word);
+	//		if(exists)
+	//			return 0;
 
-			if(isAllCaps)
-			{
-				char * title_case_word = enchant_utf8_strtitle(word, len);
-				exists = enchant_pwl_contains(pwl, title_case_word, strlen(title_case_word));
-				g_free(title_case_word);
-				if(exists)
-					return 0;
-			}
-		}
+	//		if(isAllCaps)
+	//		{
+	//			char * title_case_word = enchant_utf8_strtitle(word, len);
+	//			exists = enchant_pwl_contains(pwl, title_case_word, strlen(title_case_word));
+	//			g_free(title_case_word);
+	//			if(exists)
+	//				return 0;
+	//		}
+	//	}
 
 	return 1; /* not found */
 }

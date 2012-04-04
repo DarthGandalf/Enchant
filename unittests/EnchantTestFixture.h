@@ -34,6 +34,7 @@
 #include <io.h>
 #include <assert.h>
 #include <glib.h>
+#include <gstdio.h>
 #include <string>
 
 struct EnchantTestFixture
