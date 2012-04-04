@@ -7,10 +7,10 @@ endif
 INCLUDES=-I$(top_srcdir)/src $(ENCHANT_CFLAGS) $(CXX_WARN_CFLAGS) $(ISPELL_CFLAGS) -D_ENCHANT_BUILD=1
 
 ispell_LTLIBRARIES = $(target_lib)
-ispelldir= $(libdir)/enchant
+ispelldir= $(libdir)/enchant-cs
 
-libenchant_ispell_lalibdir=$(libdir)/enchant
-libenchant_ispell_la_LIBADD= $(ENCHANT_LIBS) $(top_builddir)/src/libenchant.la
+libenchant_ispell_lalibdir=$(libdir)/enchant-cs
+libenchant_ispell_la_LIBADD= $(ENCHANT_LIBS) $(top_builddir)/src/libenchant-cs.la
 libenchant_ispell_la_LDFLAGS = -module -avoid-version -no-undefined
 libenchant_ispell_la_SOURCES =	\
 	correct.cpp		\

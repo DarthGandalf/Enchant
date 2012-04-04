@@ -3,7 +3,7 @@ AC_CANONICAL_HOST
 
 dnl Set release number
 dnl This is derived from "Versioning" chapter of info libtool documentation.
-PACKAGE=enchant
+PACKAGE=enchant-cs
 dnl     4a) Increment when removing or changing interfaces.
 ENCHANT_MAJOR_VERSION=1
 dnl     4a) 5) Increment when adding interfaces.
@@ -524,8 +524,8 @@ dnl ============================================================================
 
 AC_OUTPUT([
 Makefile
-enchant.pc
-enchant-uninstalled.pc
+enchant-cs.pc
+enchant-cs-uninstalled.pc
 enchant.spec
 src/libenchant.rc
 src/Makefile

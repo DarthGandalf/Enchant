@@ -1,12 +1,12 @@
 SUBDIRS=src tests doc data
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = enchant.pc
+pkgconfig_DATA = enchant-cs.pc
 
 EXTRA_DIST =		\
 	autogen.sh	\
-	enchant.pc.in	\
-	enchant-uninstalled.pc.in \
+	enchant-cs.pc.in	\
+	enchant-cs-uninstalled.pc.in \
 	enchant.spec.in	\
 	enchant.spec	\
 	lt-compile-resource \
