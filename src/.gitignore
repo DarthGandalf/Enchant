@@ -1,0 +1,8 @@
+Makefile.in
+Makefile
+enchant.lo
+libenchant.la
+libenchant-cs.la
+libenchant.rc
+.deps
+.libs

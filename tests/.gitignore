@@ -1,0 +1,11 @@
+Makefile.in
+Makefile
+test-enchant
+test-enchantxx
+enchant-lsmod
+enchant
+enchant-cs
+enchant-cs-lsmod
+ispell
+.deps
+.libs

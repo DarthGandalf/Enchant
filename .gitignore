@@ -3,7 +3,6 @@ missing
 ltmain.sh
 libtool
 enchant.spec
-enchant.pc
 install-sh
 depcomp
 configure
@@ -17,3 +16,11 @@ aclocal.m4
 Makefile.in
 Makefile
 autom4te-2.53.cache
+autopackage/default.apspec
+.deps/
+.libs/
+*.pc
+*.o
+*.lo
+*.la
+*~

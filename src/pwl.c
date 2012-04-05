@@ -83,6 +83,15 @@
 #define ENCHANT_PWL_MAX_ERRORS 3
 #define ENCHANT_PWL_MAX_SUGGS 15
 
+#ifndef GStatBuf
+// older glib versions don't define GStatBuf, so we do that here.
+#ifdef _g_stat_struct
+typedef struct _g_stat_struct GStatBuf;
+#else
+typedef struct stat GStatBuf;
+#endif
+#endif
+
 /*  A PWL dictionary is stored as a Trie-like data structure EnchantTrie.
  *  The EnchantTrie datatype is completely recursive - all child nodes
  *  are simply EnchantTrie pointers.  This means that all functions 
