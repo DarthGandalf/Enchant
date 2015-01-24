@@ -1,88 +1,105 @@
-The following are notes on building enchant and its dependencies using MSVC 2005.
+How to build enchant for windows
+================================
 
-Enchant depends on glib (http://www.gtk.org/)
-Glib depends on libiconv (http://www.gnu.org/software/libiconv/) 
-             and libintl (http://www.gnu.org/software/gettext/)
+As an MSVC-only alternative, you can try https://github.com/ermshiperete/Enchant/blob/FieldWorks/msvc/Build.win32.readme
 
-Glib passes file handles to clients. Libiconv takes a file pointer (in fprintf) from clients. Because
-  these are CRT resources, it is very important that the version of the C runtime library be the same 
-  for glib and any dlls that use it. See http://msdn2.microsoft.com/en-us/library/abx4dbyh(vs.80).aspx 
-  and http://msdn2.microsoft.com/en-us/library/ms235460(VS.80).aspx for more information.
-  
-  If you see a Debug Assertion Failed (_osfile(fh) & FOPEN) this is because a file is opened using
-  one runtime and read using another.
+These instructions are for win64. If you want x86 instead, something similar can be used too. Use common sense.
 
-  Because libenchant does not expose any CRT boundaries, (no file handles, locales, or environment 
-  variables passed to clients, and no CRT allocated pointers that will be free'd by clients, except
-  when the free method is provided in the library) it can be linked with applications that do not 
-  use the same CRT. The same is true of libenchant and the providers. Due to the fact that a 
-  provider may also link to glib, we will explicitly name our glib with a new CRT so that others 
-  can coexist.
-  
-This means you need to compile glib and libintl yourself instead of using Tor Lillqvist's prebuilt libraries
-  (http://www.gimp.org/~tml/gimp/win32/downloads.html) since they use MSVCRT.DLL. (You can use
-  the prebuilt ones for libiconv, but I've included instructions for that as well.)
-  
-For people concerned that the use of any runtime library other than MSVCRT.DLL would invalidate 
-  the GPL see http://www.gnu.org/licenses/gpl-faq.html#WindowsRuntimeAndGPL
-             
-I successfully built using libiconv-1.9.1, gettext-0.14.5, and glib-2.14.2
+Enchant depends on GLib. The link above suggests that GLib and Enchant should be built using the same msvcrt.dll, but
+prebuilt binaries from http://www.gtk.org/download/win64.php worked fine for me.
+Below there is a list of which exact versions I've used.
 
-libiconv and libintl are codependent so you need to follow the instructions in libiconv's README.woe32, 
-in summary:
+I used mingw64 to cross-compile Enchant to windows. Mingw64 itself was running in Cygwin.
+Patches in FieldWorks branch which should fix compilation on MSVC, were not needed for mingw64.
 
-For release
-  - build libiconv with "nmake -f Makefile.msvc NO_NLS=1 DLL=1 MFLAGS=-MD" 
-      (I got errors: 6 unresolved externals like unresolved external symbol 
-       __imp____libiconv_version referenced in function _print_version. But 
-       those were errors with building iconv_no_i18n.exe which isn't required
-       for the next steps so can safely be ignored.)
-  - install libiconv with "nmake -f Makefile.msvc DLL=1 MFLAGS=-MD install"
-      (This will produce a set of files in c:\usr.)
-  - build libintl with "nmake -f Makefile.msvc DLL=1 MFLAGS=-MD"
-  - install libintl with "nmake -f Makefile.msvc DLL=1 MFLAGS=-MD install"
-  - build libiconv again with "nmake -f Makefile.msvc DLL=1 MFLAGS=-MD check" 
-  - install libiconv again with "nmake -f Makefile.msvc DLL=1 MFLAGS=-MD install"
+We'll need to download from http://www.gtk.org/download/win64.php
+* GLib (Binaries and Dev)
+* libiconv (Runtime only)
+* gettext-runtime (Runtime and Dev)
 
-For debug:
-  - build libiconv with "nmake -f Makefile.msvc NO_NLS=1 DLL=1 MFLAGS=-MDd PREFIX=c:\usr-debug" 
-  - install libiconv with "nmake -f Makefile.msvc DLL=1 MFLAGS=-MDd PREFIX=c:\usr-debug install"
-      (This will produce a set of files in c:\usr.)
-  - build libintl with "nmake -f Makefile.msvc DLL=1 MFLAGS=-MDd PREFIX=c:\usr-debug"
-  - install libintl with "nmake -f Makefile.msvc DLL=1 MFLAGS=-MDd PREFIX=c:\usr-debug install"
-  - build libiconv again with "nmake -f Makefile.msvc DLL=1 MFLAGS=-MDd PREFIX=c:\usr-debug check" 
-  - install libiconv again with "nmake -f Makefile.msvc DLL=1 MFLAGS=-MDd PREFIX=c:\usr-debug install"
+Enchant searches GLib using pkg-config, but .pc which is included into GLib-dev package, refers to some special prefix.
+To workaround this, we'll make a wrapper for pkg-config.
 
-add a manifest to iconv.dll and intl.dll
-  mt iconv.dll.manifest -outputresource:iconv.dll
+Put these 2 lines to /tmp/pkg-cfg-wrapper.sh
 
-glib has a VC2005 solution (build\win32\vs8) that can be used to build it
-  currently it has issues so we will do the bare minimum to build glib.dll and gmodule.dll
-  copy libintl.h and iconv.h from c:\usr\include to glib-2.14.2\ (base directory)
-  copy iconv.lib and intl.lib from c:\usr\lib to glib-2.14.2\build\win32\vs8\lib\release
-  run the glib makefile in the glib directory to generate the glib.def file 
-		  "nmake -f makefile.msc glib.def"
-  build the pcre library from the makefile.msc (after removing the -DEBCDIC=0 line and adding -I . )
-  add glib\gsequence.c, glib\gregex.c to the glib project
-  add ..\..\..\glib\pcre to the libpath and add pcre.lib to the list of libraries
-  with debug version, I was getting two copies of the runtime (debug and release) so had to 
-    explicitly tell it to ignore the release version of the library (msvcrt.lib)
-    
-copy iconv.dll and intl.dll from c:\usr\bin to enchant\lib\glib\release
-copy libglib-2.0-0-vs8.dll and libgmodule-2.0-0.dll to enchant\lib\glib\release
-copy glib-2.0-vs8.lib and gmodule-2.0-vs8.lib to enchant\lib\glib\lib\release
+#!/bin/bash
+env PKG_CONFIG_PATH=/cygdrive/c/Users/q/Downloads/glib-dev_2.34.3-1_win64/lib/pkgconfig pkg-config --define-variable=prefix=/cygdrive/c/Users/q/Downloads/glib-dev_2.34.3-1_win64 "$@"
 
-do the same as above for debug
+Don't forget to chmod +x /tmp/pkg-cfg-wrapper.sh
+
+In a fresh checkout of Enchant:
+First, need to modify src/Makefile.am: remove -DENCHANT_GLOBAL_MODULE_DIR from it. Otherwise, Enchant will look at several hard-coded places for its backends (e.g. myspell), but not near itself.
+Then:
+./autogen.sh --no-configure
+mkdir build
+cd build
+../configure --host=x86_64-w64-mingw32 --target=x86_64-w64-mingw32 --prefix=/tmp/enchant-root PKG_CONFIG=/tmp/pkg-cfg-wrapper.sh LDFLAGS=-L/cygdrive/c/Users/q/Downloads/gettext-dev_0.18.2.1-1_win64/lib
+make
+make install
+
+Enchant is compiled. Need to make it usable from MSVC.
+To do that, need libenchant.def. I've put one here, but if you want to generate it yourself, you can either do it by hand,
+or use the following option to gcc while linking libenchant.dll: -Wl,--output-def,libenchant.def
+When you have libenchant.def, open Developer Command Prompt for VS2013, navigate to the directory, and run:
+lib /machine:x64 /def:libenchant.def
+Now we have libenchant.lib.
+
+There is one more complication regarding GLib:
+If to use the provided headers as is, MSVC refuses to compile due to some errors.
+If to compile GLib using MSVC, there probably won't be need for such hacks, but we downloaded the prebuilt version, remember?
+Copy glib-dev_2.34.3-1_win64/lib/glib-2.0/include/glibconfig.h to some other place.
+We'll need to make 2 modifications for it:
+1. Right after "#define __GLIBCONFIG_H__" add two more lines:
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+2. Find a block with "#define G_CAN_INLINE". After that block add this line:
+#undef G_CAN_INLINE
+
+Now Enchant is usable with MSVC:
+Add directories with enchant headers, glib-2.0 headers, and our modified glibconfig.h to Include directories in MSVC.
+Add libenchant.lib to additional libraries.
+
+TODO: find an easy way to point cmake at enchant using pkg-config when building for MSVC.
+
+Runtime dependencies
+--------------------
+Program which was built using libenchant.lib needs these files in PATH. E.g. you can put them right near .exe
+* libenchant.dll - copy it from /tmp/enchant-root/bin
+* libglib-2.0-0.dll - was downloaded
+* libgmodule-2.0-0.dll - was downloaded in GLib
+* libiconv-2.dll - was downloaded
+* libintl-8.dll - was downloaded in gettext-runtime
+
+Myspell backend was already built during "make". It's in /tmp/enchant-root/lib/enchant/libenchant_myspell.dll
+It needs to be in relative path from .exe, in lib/enchant/
+Dictionaries for myspell can be put to share/myspell/dicts/
+enchant.ordering can be copied from /tmp/enchant-root/share/enchant to share/enchant/
+If your .exe lives in some bin/, put lib/ and share/ near that bin/ instead.
+Note that libenchant_myspell.dll requires also several more files in PATH:
+* libstdc++-6.dll
+* libgcc_s_seh-1.dll
+They are in /usr/x86_64-w64-mingw32/sys-root/mingw/bin
+Warning: before distributing the binaries, check licenses of mingw64 runtime.
+
+TODO: build other backends, e.g. aspell
 
 
-When distributing, be sure to include:
-  msvcm80.dll
-  msvcp80.dll
-  msvcr80.dll
-  Microsoft.VC80.CRT.manifest (these are included in vcredist_x86.exe and Microsoft_VC80_CRT_x86.msm)
-  intl.dll
-  iconv.dll
-  libglib-2.0-0-vs8.dll
-  libgmodule-2.0-0-vs8.dll
-  libenchant.dll
-    (any providers and their dependencies)
+Versions I used
+---------------
+
+For reference, these worked for me:
+I used:
+Windows 7 x64
+Visual Studio 2013 Community
+GLib 2.34.3
+libicinv 1.13.1
+gettext-runtime 0.18.2.1
+
+Cygwin 64 environment:
+mingw64-x86_64-gcc-g++ 4.8.3-1
+pkg-config 0.28-1
+make 4.0-2
+automake
+autoconf
+git
+
