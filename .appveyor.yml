@@ -1,0 +1,54 @@
+version: 0.0.0.0.1-branch-{branch}-build-{build}
+shallow_clone: true
+cache:
+    - c:\cygwin-setup-cache
+    - c:\deps
+    - c:\deps-bin
+environment:
+    CYGWIN_NOWINPATH: yes
+    WINDRES: x86_64-w64-mingw32-windres
+install:
+    - ps: Invoke-WebRequest https://cygwin.com/setup-x86_64.exe -OutFile c:\cygwin-setup.exe
+    - c:\cygwin-setup.exe --quiet-mode --no-shortcuts --no-startmenu --no-desktop --upgrade-also --only-site --site http://mirrors.kernel.org/sourceware/cygwin/ --root c:\cygwin-root --local-package-dir c:\cygwin-setup-cache --packages mingw64-x86_64-gcc-g++,unzip,pkg-config,automake,perl,libtool,make,diffutils,rsync
+    - c:\cygwin-root\bin\sh -lc "echo Hi"
+    - ps: |
+        if (Test-Path c:\deps\include\glib-2.0\glib.h) {
+            echo "using h from cache"
+        } else {
+            c:\cygwin-root\bin\mkdir /cygdrive/c/deps
+            Invoke-WebRequest http://win32builder.gnome.org/packages/3.6/glib-dev_2.34.3-1_win64.zip      -OutFile c:\deps\glib-dev_2.34.3-1_win64.zip
+            Invoke-WebRequest http://win32builder.gnome.org/packages/3.6/gettext-dev_0.18.2.1-1_win64.zip -OutFile c:\deps\gettext-dev_0.18.2.1-1_win64.zip
+            c:\cygwin-root\bin\sh -lc 'cd /cygdrive/c/deps; for f in *.zip; do unzip $f </dev/null; done'
+        }
+    - c:\cygwin-root\bin\find /cygdrive/c/deps -type f
+    - ps: |
+        if (Test-Path c:\deps-bin\bin/libglib-2.0-0.dll) {
+            echo "using bin from cache"
+        } else {
+            c:\cygwin-root\bin\mkdir /cygdrive/c/deps-bin
+            Invoke-WebRequest http://win32builder.gnome.org/packages/3.6/glib_2.34.3-1_win64.zip          -OutFile c:\deps-bin\glib_2.34.3-1_win64.zip
+            Invoke-WebRequest http://win32builder.gnome.org/packages/3.6/gettext_0.18.2.1-1_win64.zip     -OutFile c:\deps-bin\gettext_0.18.2.1-1_win64.zip
+            Invoke-WebRequest http://win32builder.gnome.org/packages/3.6/libiconv_1.13.1-1_win64.zip      -OutFile c:\deps-bin\libiconv_1.13.1-1_win64.zip
+            c:\cygwin-root\bin\sh -lc 'cd /cygdrive/c/deps-bin; for f in *.zip; do unzip $f </dev/null; done'
+        }
+    - c:\cygwin-root\bin\find /cygdrive/c/deps-bin -type f
+build_script:
+    - c:\cygwin-root\bin\chmod +x pkg-cfg-wrapper.sh autogen.sh
+    - c:\cygwin-root\bin\sh -lc "cd $APPVEYOR_BUILD_FOLDER; ./autogen.sh --no-configure < /dev/null"
+    - mkdir build
+    - c:\cygwin-root\bin\sh -lc "cd $APPVEYOR_BUILD_FOLDER; pwd; folder=`pwd`; cd build; ../configure --host=x86_64-w64-mingw32 --target=x86_64-w64-mingw32 --prefix=$folder/enchant-inst PKG_CONFIG=$folder/pkg-cfg-wrapper.sh LDFLAGS=-L/cygdrive/c/deps/lib < /dev/null"
+    - c:\cygwin-root\bin\sh -lc "cd $APPVEYOR_BUILD_FOLDER/build; make < /dev/null"
+    - c:\cygwin-root\bin\sh -lc "cd $APPVEYOR_BUILD_FOLDER/build; make install < /dev/null"
+    - c:\cygwin-root\bin\find . -type f
+    - c:\cygwin-root\bin\cp -v /usr/x86_64-w64-mingw32/sys-root/mingw/bin/libstdc++-6.dll    enchant-inst/bin/
+    - c:\cygwin-root\bin\cp -v /usr/x86_64-w64-mingw32/sys-root/mingw/bin/libgcc_s_seh-1.dll enchant-inst/bin/
+    - c:\cygwin-root\bin\cp -v /cygdrive/c/deps-bin/bin/libglib-2.0-0.dll    enchant-inst/bin/
+    - c:\cygwin-root\bin\cp -v /cygdrive/c/deps-bin/bin/libgmodule-2.0-0.dll enchant-inst/bin/
+    - c:\cygwin-root\bin\cp -v /cygdrive/c/deps-bin/bin/libiconv-2.dll       enchant-inst/bin/
+    - c:\cygwin-root\bin\cp -v /cygdrive/c/deps-bin/bin/libintl-8.dll        enchant-inst/bin/
+    - c:\cygwin-root\bin\sh -c "/bin/cp -v /cygdrive/c/deps-bin/share/doc/glib-*/COPYING enchant-inst/COPYING.glib"
+    - c:\cygwin-root\bin\rsync -a /cygdrive/c/deps/include/ enchant-inst/include/
+    - c:\cygwin-root\bin\cp -v /cygdrive/c/deps/lib/glib-2.0/include/glibconfig.h enchant-inst/include/glib-2.0/
+    - 7z a enchant.7z enchant-inst/
+    - ps: Push-AppveyorArtifact enchant.7z
+test: off
