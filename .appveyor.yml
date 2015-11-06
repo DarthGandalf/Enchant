@@ -1,0 +1,4 @@
+version: 0.0.0.0.1-branch-{branch}-build-{build}
+shallow_clone: true
+build_script:
+  - c:\msys64\usr\bin\pacman -Q
